@@ -1,14 +1,129 @@
-# ⚙️ Odoo 18 ⚙️ Developer Guide & Project Plan
-# 💡 Overview: Golden Start Tyre System Core Module
-This module provides the customized business logic and views required to manage the operational flow of Golden Start Tyres.
+# Odoo 18 Golden Stars Management System - Developer Guide
 
-Golden Start Tyres is a retail shop that specializes in selling tyres of all models and sizes. This Odoo module acts as the central system for key business processes, extending standard Odoo functionalities to cater to the automotive tyre retail sector.
+## 📋💡 Overview 
+This custom module provides the customized business logic and views required to manage the operational flow of Golden Start Tyres. Golden Start Tyres is a retail shop that specializes in selling tyres of all models and sizes. This Odoo module acts as the central system for key business processes, extending standard Odoo functionalities to cater to the automotive tyre retail sector.
 
-💡 Overview: Golden Start Tyre System Core ModuleThis module provides the customized business logic and views required to manage the operational flow of Golden Start Tyres.Golden Start Tyres is a retail shop that specializes in selling tyres of all models and sizes. This Odoo module acts as the central system for key business processes, extending standard Odoo functionalities to cater to the automotive tyre retail sector.🎯 Project Phases & Module StructureThe implementation is structured into three distinct phases based on business priority:Phase 1: Sales Record (Priority: High 🥇)Focuses on customizing the standard Odoo sale.order and product.product models to efficiently record and track everyday tyre sales.ElementDescriptionKey Technical ReferenceGoalEnsure complete and accurate recording of all tyre sales and related services.sale.order / product.product inheritanceKey Fields (Product Extension)Added to product.product: gtm_tyre_size (Char), gtm_load_index (Char), gtm_speed_rating (Selection).models/tyre_product.pyKey Fields (Sales Order Line)Added to sale.order.line: gtm_serial_number (Char - to track lot/serial used), gtm_fitting_service (Boolean).models/tyre_sale.pyWorkflow StatesStandard sale.order states will be used: Draft $\rightarrow$ Sent $\rightarrow$ Sale Order $\rightarrow$ Done (Invoiced).Odoo standardMethodsaction_confirm_tyre_sale(): Overrides standard confirmation to ensure serial numbers are captured and stock is reserved for high-value tyres.models/tyre_sale.pyPhase 2: Inventory Tracking (Priority: Medium 📦)Focuses on detailed stock movement tracking, especially related to the unique attributes of tyres.ElementDescriptionKey Technical ReferenceGoalAchieve real-time, accurate visibility of stock levels and movement, linking serial numbers to specific sales/purchases.stock.move / stock.pickingFocus AreaConfiguration of product.product to enforce Tracking by Lots/Serial Numbers and customizing the stock.picking forms.XML views/Product ConfigurationMethodscompute_stock_value(): Custom method on product to calculate stock based on specific valuation methods relevant to tyres (e.g., FIFO for aging reports).models/tyre_inventory.pyPhase 3: Track Purchase (Priority: Medium 💰)Focuses on recording purchases from suppliers (purchase.order) and linking them directly to incoming stock (stock-in).ElementDescriptionKey Technical ReferenceGoalStreamline procurement, ensure supplier info is recorded, and accurately link purchases to stock receipts.purchase.order / stock.pickingKey Fields (Purchase Order Line)Added to purchase.order.line: gtm_supplier_sku (Char - supplier's internal code for the tyre).models/tyre_purchase.pyMethodsaction_receive_tyres(): Automated method triggered by purchase confirmation to generate an accurate stock receipt (stock.picking).models/tyre_purchase.py⚙️ Module Technical DetailsModule NameTechnical Name: golden_tyres_managementPrefix Standard: gtm_ (Used for all custom fields and methods)Dependencies (__manifest__.py)The module must depend on the following standard Odoo applications:Python'depends': [
-    'base', 
-    'stock',          # For Phase 2 (Inventory)
-    'sale_management',  # For Phase 1 (Sales)
-    'purchase',       # For Phase 3 (Purchase)
-    'account'         # For Invoicing/Billing
-],
-🔐 Security & Access RightsSince the system is initially intended for one user (the owner/administrator), a full access strategy is applied:ComponentSettingJustificationUser AccessAssign the user to the Administrator or All Features group.Grants full control over all required modules (Sales, Purchase, Inventory, Configuration).Future PlanningSecurity record rules must be implemented when more users (e.g., Salesmen, Stock Keepers) are added.📅 Implementation RoadmapPhaseTasksStart Date (Approx.)End Date (Approx.)SetupEnvironment setup, module creation, and dependency configuration.2025-11-152025-11-18Phase 1Sales Record development, product extensions, and core methods.2025-11-192025-12-10Phase 2Inventory configuration (Lots/Serials), stock movement customization, and valuation logic.2025-12-112025-12-24Phase 3Purchase extensions, supplier SKU tracking, and automated stock receipt.2025-12-252026-01-10UAT & Bug FixesUser Acceptance Testing (self-testing) and final code refinement.2026-01-112026-01-15Go-LiveFinal deployment to production environment.2026-01-16N/A✅ Testing ChecklistThis checklist ensures the module functions correctly across all major processes.AreaTest CaseExpected ResultStatusProductCreate a new tyre product, ensuring all gtm_ fields are correctly displayed and saved.Product saves successfully; custom fields hold data.☐SalesCreate a sales order for a tyre, confirming the gtm_serial_number is captured and linked to the final delivery.Order confirms, delivery note shows serial number, and stock is depleted.☐InventoryCheck the 'Quantity On Hand' for a specific tyre model after a purchase receipt.The stock count accurately reflects the new inventory.☐PurchaseCreate a purchase order, confirm it, and receive the tyres into stock. Verify the gtm_supplier_sku is saved.The purchase order is marked as received, stock increases, and supplier SKU is logged.☐SecurityVerify the single user can access, modify, and delete records across all three phases.Full administrative access is confirmed.☐📌 Important NotesCustom Prefix: Adherence to the gtm_ prefix is non-negotiable for future maintenance and compatibility.Stock-In/Stock-Out: Odoo handles Stock-In via Purchase Receipts and Stock-Out via Sales Deliveries/Scrap; no custom core models are needed for these fundamental movements, only extensions on the forms.Data Migration: A plan must be established to migrate existing product data and populate the new gtm_ specification fields before Go-Live.📚 Useful Odoo Documentation LinksResourceDescriptionHow to Create a ModuleOdoo 18 Backend Development - Creating a ModuleModel InheritanceExtending Existing Odoo ModelsAccess RightsOdoo Security and Access RulesInventory & StockTechnical Guide on Stock Movements (Picking/Moves)
+## 🎯 Core Objectives Project Phases & Module Structure
+- Manage everyday tyre sales 
+- Track tyre inventory (Stock in and out)
+- Manage suppliers purchases
+---
+
+---
+## 🏗️⚙️ Module Structure & Technical Details
+
+### Module Name
+Technical Name: `tyre_management`
+Prefix Standard: gtm_ (Used for all custom fields and methods)
+
+### Dependencies
+```python
+'depends': [
+    'base',
+    'sales_management',   # Sales 
+    'purchase',           # Purchases 
+    'inventory',          # Inventory Management 
+]
+```
+---
+## 📦 Phase 1: Sales Record (Priority: High 🥇)
+
+**Purpose**: Ensure complete and accurate recording of all tyre sales and related services.
+
+# 🎯 Goal 
+Ensure complete and accurate recording of all tyre sales and related services.
+
+# ⚙️ Sales Module Extensions 
+**Key Fields**:
+```python
+- sale_number (Char) - Auto-generated unique ID
+- Creation (Date) - When sale was created 
+- customer_name (Char) - Required
+- tyre_type - model of the tyre name
+- size - the size of the tyre etc. R15 or R14
+- amount - amount paid by the customer 
+- Status - if the amount was paid in full or partial payment
+```
+
+**Workflow States**:
+1. **Posted** - Amount paid in full
+2. **Partial** - Amount paid partial
+---
+
+## Phase 2: Inventory Tracking (Priority: Medium 📦)
+
+**Purpose**: Focuses on detailed stock movement tracking, especially related to the unique attributes of tyres
+
+# 🎯 Goal
+Achieve real-time, accurate visibility of stock levels and movement, linking serial numbers to specific sales/purchases
+
+## Phase 3: Track Purchase (Priority: Medium 💰)
+Focuses on recording purchases from suppliers (purchase.order) and linking them directly to incoming stock (stock-in)
+
+# 🎯 Goal
+Streamline procurement, ensure supplier info is recorded, and accurately link purchases to stock receipts
+
+## 🚀📅 Implementation Roadmap
+
+### Sprint 1
+- [ ] Envirnment Setup
+- [ ] Create module structure
+- [ ] Implement Tyres model
+- [ ] Implement Class model
+- [ ] Basic security groups
+- [ ] Dependency Configuration
+
+### Sprint 2
+- [ ] Sales Record development 
+- [ ] product extensions
+- [ ] Core methods
+
+### Sprint 3
+- [ ] Inventory configuration (Lots/Serials)
+- [ ] stock movement customization
+- [ ] Valuation Logic
+
+### Sprint 4
+- [ ] Purchase extensions
+- [ ] Supplier SKU tracking
+- [ ] Automated stock receipt
+
+### Sprint 5 (Weeks 9-10): Polish & Testing
+- [ ] Complete all views
+- [ ] User Acceptance Testing
+- [ ] Final code refinement
+- [ ] Testing and bug fixes
+
+---
+
+## 🧪 Testing Checklist
+
+- [ ] Create a new tyre product, ensuring all gtm_ fields are correctly displayed and saved
+- [ ] Create a sales order for a tyre, confirming the gtm_serial_number is captured and linked to the final delivery
+- [ ] Check the 'Quantity On Hand' for a specific tyre model after a purchase receipt
+- [ ] Create a purchase order, confirm it, and receive the tyres into stock. Verify the gtm_supplier_sku is saved
+- [ ] Verify the single user can access, modify, and delete records across all three phases
+
+---
+
+## 📝 Important Notes
+
+1. **Stock-In/Stock-Out**: Odoo handles Stock-In via Purchase Receipts and Stock-Out via Sales Deliveries/Scrap; no custom core models needed, only extensions on the forms.
+2. **Data Migration**: A plan must be established to migrate existing product data and populate the new gtm_ specification fields before Go-Live. 
+3. **Data Validation**: Implement constraints (unique sale, purchase, inventory IDs, valid dates, etc.)
+4. **Audit Trail**: Track all state changes for applications, admissions, and payments
+
+---
+
+## 🔗 Useful Odoo Documentation Links
+
+- Models: https://www.odoo.com/documentation/18.0/developer/howtos/backend.html%23how-to-create-an-odoo-module
+- Views: https://www.odoo.com/documentation/18.0/developer/reference/backend/views.html
+- Security: https://www.odoo.com/documentation/18.0/developer/reference/backend/security.html
+- Accounting Integration: https://www.odoo.com/documentation/18.0/applications/finance/accounting.html
+
+---
+
+**Version**: 1.0  
+**Last Updated**: November 2025  
+**Odoo Version**: 19.0
