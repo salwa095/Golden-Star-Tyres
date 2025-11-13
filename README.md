@@ -9,7 +9,6 @@ This custom module provides the customized business logic and views required to 
 - Manage suppliers purchases
 ---
 
----
 ## 🏗️⚙️ Module Structure & Technical Details
 
 ### Module Name
